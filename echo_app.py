@@ -271,7 +271,7 @@ class EchoApp:
         )
 
     def run_conversation_loop(self, left_params: Dict, right_params: Dict,
-                            initial_prompt: Optional[str] = None) -> Generator[str, None, None]:
+                            initial_prompt: Optional[str] = None) -> Generator[List[Tuple[Optional[str], Optional[str]]], None, None]:
         """Run the conversation loop between agents"""
         # Create agents with current configurations
         left_config = self.create_agent_config(left_params)
@@ -313,7 +313,10 @@ class EchoApp:
 
                 # Generate response
                 response_text = ""
-                yield self.format_conversation() + f"\n\n**{agent_name} is typing...**"
+                # Show typing indicator
+                typing_conv = self.format_conversation()
+                typing_conv.append((None, f"**{agent_name} is typing...**"))
+                yield typing_conv
 
                 for chunk in agent.generate_streaming(messages):
                     if self.conversation.stop_event.is_set():
@@ -332,42 +335,54 @@ class EchoApp:
 
             except Exception as e:
                 logger.error(f"Error in conversation loop: {e}")
-                yield self.format_conversation() + f"\n\n**Error: {str(e)}**"
+                error_conv = self.format_conversation()
+                error_conv.append((None, f"**Error: {str(e)}**"))
+                yield error_conv
                 break
 
         self.conversation.is_running = False
-        yield self.format_conversation() + "\n\n**Conversation stopped.**"
+        stopped_conv = self.format_conversation()
+        stopped_conv.append((None, "**Conversation stopped.**"))
+        yield stopped_conv
 
-    def format_conversation(self) -> str:
-        """Format conversation history for display"""
+    def format_conversation(self) -> List[Tuple[Optional[str], Optional[str]]]:
+        """Format conversation history for chatbot display"""
         if not self.conversation.messages:
-            return "*No messages yet. Start the conversation or inject a prompt.*"
+            return []
 
         formatted = []
         for msg in self.conversation.messages:
             # Use display names for agents
             if msg["agent"] == "left":
                 agent_label = f"🔵 {self.left_display_name}"
+                # Left agent messages appear on the assistant side
+                formatted.append((None, f"**{agent_label}:**\n\n{msg['content']}"))
             elif msg["agent"] == "right":
                 agent_label = f"🔴 {self.right_display_name}"
+                # Right agent messages also appear on the assistant side
+                formatted.append((None, f"**{agent_label}:**\n\n{msg['content']}"))
             elif msg["agent"] == "user":
                 agent_label = "👤 User"
+                # User messages appear on the user side
+                formatted.append((f"**{agent_label}:**\n\n{msg['content']}", None))
             else:
-                agent_label = msg["agent"]
+                # Default: treat as user message
+                formatted.append((msg['content'], None))
 
-            formatted.append(f"**{agent_label}:**\n{msg['content']}\n")
+        return formatted
 
-        return "\n---\n".join(formatted)
-
-    def format_conversation_with_partial(self, agent_name: str, partial_text: str) -> str:
+    def format_conversation_with_partial(self, agent_name: str, partial_text: str) -> List[Tuple[Optional[str], Optional[str]]]:
         """Format conversation with partial response being typed"""
         base = self.format_conversation()
-        return base + f"\n---\n**{agent_name}:**\n{partial_text}"
+        # Add the partial message as an assistant message
+        base_copy = base.copy()
+        base_copy.append((None, f"**{agent_name}:**\n\n{partial_text}"))
+        return base_copy
 
-    def start_conversation(self, left_params: Dict, right_params: Dict) -> Generator[str, None, None]:
+    def start_conversation(self, left_params: Dict, right_params: Dict) -> Generator[List[Tuple[Optional[str], Optional[str]]], None, None]:
         """Start the conversation between agents"""
         if self.conversation.is_running:
-            yield "Conversation already running. Please stop it first."
+            yield [(None, "**Conversation already running. Please stop it first.**")]
             return
 
         self.conversation.is_running = True
@@ -381,13 +396,13 @@ class EchoApp:
         self.conversation.stop_event.set()
         return "Stopping conversation..."
 
-    def clear_conversation(self) -> str:
+    def clear_conversation(self) -> List[Tuple[Optional[str], Optional[str]]]:
         """Clear the conversation history"""
         self.conversation.clear()
-        return "*Conversation cleared. Ready to start fresh.*"
+        return []
 
     def inject_message(self, message: str, from_side: str, left_params: Dict,
-                      right_params: Dict) -> Generator[str, None, None]:
+                      right_params: Dict) -> Generator[List[Tuple[Optional[str], Optional[str]]], None, None]:
         """Inject a user message from either side"""
         if not message:
             yield self.format_conversation()
@@ -531,10 +546,14 @@ Stay in character as a serious, motivated learner who wants to truly understand,
             # Center Conversation Column
             with gr.Column(scale=2):
                 gr.Markdown("### 💬 Conversation")
-                conversation_display = gr.Markdown(
-                    value="*No messages yet. Start the conversation or inject a prompt.*",
+                conversation_display = gr.Chatbot(
+                    value=[],
                     elem_id="conversation",
-                    max_height="70vh",
+                    height="70vh",
+                    autoscroll=True,
+                    render_markdown=True,
+                    show_copy_button=True,
+                    bubble_full_width=True,
                     container=True
                 )
 
