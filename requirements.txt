@@ -1,0 +1,10 @@
+# Echo: Two-Agent Ollama Playground Dependencies
+
+# Core dependencies
+gradio>=4.19.0
+ollama>=0.2.0
+requests>=2.31.0
+pyyaml>=6.0
+
+# Additional utilities
+python-dotenv>=1.0.0

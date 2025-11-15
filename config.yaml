@@ -1,0 +1,101 @@
+# Echo Application Configuration
+# Default settings for the Two-Agent Ollama Playground
+
+# Default model settings
+default_model: "llama3.2"
+
+# Left Agent Defaults (Student)
+left_agent:
+  name: "Student"
+  system_prompt: "You are The Inquisitive Deep-Diving Student. Your role is to learn as much as possible from a very capable teacher by asking sharp, honest questions and actively engaging with their explanations."
+  context_mode: "Rolling Window (Last 10)"
+
+  # Sampling parameters
+  temperature: 0.7
+  top_p: 0.9
+  top_k: 40
+  min_p: 0.05
+
+  # Generation control
+  max_tokens: 512
+  context_window: 4096
+
+  # Repetition control
+  repeat_penalty: 1.1
+  repeat_last_n: 64
+  presence_penalty: 0.0
+  frequency_penalty: 0.0
+
+  # Advanced sampling
+  mirostat: 0
+  mirostat_tau: 5.0
+  mirostat_eta: 0.1
+  tfs_z: 1.0
+
+# Right Agent Defaults (Teacher)
+right_agent:
+  name: "Teacher"
+  system_prompt: "You are The Patient Master Teacher. Your role is to help a single curious student develop deep, transferable understanding of complex ideas. You are calm, kind, and endlessly patient."
+  context_mode: "Rolling Window (Last 10)"
+
+  # Sampling parameters
+  temperature: 0.7
+  top_p: 0.9
+  top_k: 40
+  min_p: 0.05
+
+  # Generation control
+  max_tokens: 512
+  context_window: 4096
+
+  # Repetition control
+  repeat_penalty: 1.1
+  repeat_last_n: 64
+  presence_penalty: 0.0
+  frequency_penalty: 0.0
+
+  # Advanced sampling
+  mirostat: 0
+  mirostat_tau: 5.0
+  mirostat_eta: 0.1
+  tfs_z: 1.0
+
+# Preset configurations for quick setup
+presets:
+  creative:
+    temperature: 1.0
+    top_p: 0.95
+    top_k: 50
+    repeat_penalty: 1.0
+
+  balanced:
+    temperature: 0.7
+    top_p: 0.9
+    top_k: 40
+    repeat_penalty: 1.1
+
+  precise:
+    temperature: 0.3
+    top_p: 0.7
+    top_k: 20
+    repeat_penalty: 1.2
+
+  code_generation:
+    temperature: 0.15
+    top_p: 0.7
+    top_k: 15
+    repeat_penalty: 1.2
+    max_tokens: 1024
+
+# Application settings
+app:
+  host: "0.0.0.0"
+  port: 7860
+  share: false
+  inbrowser: true
+
+# Ollama connection
+ollama:
+  base_url: "http://localhost:11434"
+  timeout: 120
+  keep_alive: "5m"
